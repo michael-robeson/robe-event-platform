@@ -14,3 +14,5 @@
   schemas, or CI/CD workflows without an explicit task and reviewed decisions.
 - Prefer focused validation relevant to the change; document required setup
   when implementation introduces it.
+- Follow the [feature-lifecycle skill](.github/skills/feature-lifecycle/SKILL.md)
+  for feature branch, PR, merge, and cleanup procedures.
