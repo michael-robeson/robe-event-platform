@@ -12,9 +12,9 @@ products are external producers or consumers. Their business logic,
 application-specific event contracts, and data models do not belong here.
 
 The first executable increment is a local reference slice that publishes an
-illustrative semantic event through the Pub/Sub emulator and persists a
-consumer-owned projection in PostgreSQL 17. It does not provision cloud
-resources or implement product integrations.
+illustrative semantic event through the Pub/Sub emulator and persists
+independently owned item and audit projections in PostgreSQL 17. It does not
+provision cloud resources or implement product integrations.
 
 ## Architectural principles
 
