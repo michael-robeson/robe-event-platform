@@ -36,12 +36,15 @@ jobs:
           admin_password=$(openssl rand -hex 24)
           app_password=$(openssl rand -hex 24)
           audit_password=$(openssl rand -hex 24)
+          workbench_password=$(openssl rand -hex 24)
           echo "::add-mask::$admin_password"
           echo "::add-mask::$app_password"
           echo "::add-mask::$audit_password"
+          echo "::add-mask::$workbench_password"
           echo "POSTGRES_ADMIN_PASSWORD=$admin_password" >> "$GITHUB_ENV"
           echo "ITEM_PROJECTION_DB_PASSWORD=$app_password" >> "$GITHUB_ENV"
           echo "AUDIT_PROJECTION_DB_PASSWORD=$audit_password" >> "$GITHUB_ENV"
+          echo "WORKBENCH_DB_PASSWORD=$workbench_password" >> "$GITHUB_ENV"
       - name: Start PostgreSQL
         run: docker compose up --build --wait --wait-timeout 120 postgres
       - name: Build audit migration image
@@ -55,8 +58,10 @@ jobs:
           audit-consumer audit-ack-fault-proxy
       - name: Provision emulator topic and subscription
         run: docker compose run --rm pubsub-bootstrap
+      - name: Start the workbench
+        run: docker compose -f compose.yaml -f compose.workbench.yaml up --build --wait --wait-timeout 120 workbench
       - name: Run end-to-end tests
-        run: python -m pytest tests/e2e -q
+        run: python -m pytest tests/e2e tests/workbench -q
       - name: Show service logs on failure
         if: failure()
         run: docker compose logs --no-color

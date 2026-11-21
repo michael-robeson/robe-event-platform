@@ -44,4 +44,4 @@ They will be added when needed rather than created as empty directories.
 ## Local development
 
 See [the first vertical-slice guide](docs/development/first-vertical-slice.md)
-for local setup and end-to-end verification.
+for local setup, end-to-end verification, and the optional read-only workbench.

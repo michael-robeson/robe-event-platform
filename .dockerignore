@@ -13,6 +13,8 @@ htmlcov
 *.egg-info
 build
 dist
+**/node_modules
+**/dist
 *.db
 *.sqlite
 *.sqlite3

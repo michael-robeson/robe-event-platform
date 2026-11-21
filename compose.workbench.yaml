@@ -1,0 +1,46 @@
+services:
+  workbench-provision:
+    build:
+      context: .
+      dockerfile: apps/workbench/Dockerfile
+    command: ["python", "-m", "robe_event_platform.workbench.provision"]
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: robe_events
+      DATABASE_USER: robe_admin
+      DATABASE_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:?Set POSTGRES_ADMIN_PASSWORD in .env}
+      WORKBENCH_DB_PASSWORD: ${WORKBENCH_DB_PASSWORD:?Set WORKBENCH_DB_PASSWORD in .env}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      audit-migrate:
+        condition: service_completed_successfully
+    restart: "no"
+
+  workbench:
+    build:
+      context: .
+      dockerfile: apps/workbench/Dockerfile
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: robe_events
+      DATABASE_USER: workbench_reader
+      DATABASE_PASSWORD: ${WORKBENCH_DB_PASSWORD:?Set WORKBENCH_DB_PASSWORD in .env}
+      PUBSUB_EMULATOR_HOST: pubsub:8085
+      PUBSUB_PROJECT_ID: robe-local
+    depends_on:
+      workbench-provision:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:8083:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/')"
+      interval: 2s
+      timeout: 2s
+      retries: 20
