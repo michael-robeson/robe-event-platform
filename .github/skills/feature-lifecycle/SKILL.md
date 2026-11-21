@@ -28,9 +28,10 @@ broader lifecycle authorization.
 ## Current enforcement limitations
 
 GitHub does not currently enforce branch protection on `develop` or `main`,
-and the repository has no GitHub Actions workflows or required CI checks.
-The review and merge requirements below are procedural, not GitHub-enforced.
-The attempted protection setup was rejected under the current repository plan.
+and no CI checks are configured as required. The review and merge requirements
+below are procedural, not GitHub-enforced. Pull requests targeting `develop`
+run GitHub Actions tests, but these are not protected merge gates. The
+attempted protection setup was rejected under the current repository plan.
 Recheck the actual settings and checks for each PR; do not treat these
 limitations as evidence of a passing review or CI.
 

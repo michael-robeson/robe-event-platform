@@ -14,7 +14,7 @@ application-specific event contracts, and data models do not belong here.
 The first executable increment is a local reference slice that publishes an
 illustrative semantic event through the Pub/Sub emulator and persists a
 consumer-owned projection in PostgreSQL 17. It does not provision cloud
-resources, implement product integrations, or add CI/CD workflows.
+resources or implement product integrations.
 
 ## Architectural principles
 
@@ -35,8 +35,8 @@ resources, implement product integrations, or add CI/CD workflows.
 - [docs/architecture/overview.md](docs/architecture/overview.md) — conceptual
   architecture, boundaries, and intended repository layout.
 - [docs/decisions/](docs/decisions/) — ADR conventions and template.
-- [.github/workflows/](.github/workflows/) — reserved for future CI/CD
-  workflows; none are defined yet.
+- [.github/workflows/](.github/workflows/) — pull-request verification
+  workflows; no deployment workflows are defined.
 
 Future implementation areas are documented in the architecture overview.
 They will be added when needed rather than created as empty directories.
