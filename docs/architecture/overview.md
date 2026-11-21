@@ -19,6 +19,8 @@ and database-independence principles are accepted in
 details for ownership boundaries and recovery remain open. The first
 executable implementation is a local demonstration; see the [vertical-slice
 guide](../development/first-vertical-slice.md).
+The local read-only workbench and its observation limits are accepted in
+[ADR-0004](../decisions/0004-local-event-platform-workbench.md).
 
 ## Context and boundaries
 
