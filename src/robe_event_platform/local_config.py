@@ -7,6 +7,7 @@ LOCAL_PROJECT_ID = "robe-local"
 LOCAL_EMULATOR_HOST = "pubsub:8085"
 EVENT_TOPIC_ID = "demo-events"
 PROJECTION_SUBSCRIPTION_ID = "demo-item-projection"
+AUDIT_SUBSCRIPTION_ID = "demo-item-audit"
 
 
 def require_local_pubsub() -> tuple[str, str]:

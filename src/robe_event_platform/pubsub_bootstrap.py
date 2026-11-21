@@ -9,6 +9,7 @@ from google.api_core.exceptions import AlreadyExists, ServiceUnavailable
 from google.cloud import pubsub_v1
 
 from robe_event_platform.local_config import (
+    AUDIT_SUBSCRIPTION_ID,
     EVENT_TOPIC_ID,
     LOCAL_EMULATOR_HOST,
     LOCAL_PROJECT_ID,
@@ -66,12 +67,18 @@ def provision() -> None:
     push_endpoint = os.environ.get("PUBSUB_PUSH_ENDPOINT")
     if push_endpoint != "http://ack-fault-proxy:9000/pubsub/push":
         raise RuntimeError("PUBSUB_PUSH_ENDPOINT must target the local test proxy")
+    audit_endpoint = os.environ.get("PUBSUB_AUDIT_PUSH_ENDPOINT")
+    if audit_endpoint != "http://audit-ack-fault-proxy:9000/pubsub/push":
+        raise RuntimeError("PUBSUB_AUDIT_PUSH_ENDPOINT must target the local audit proxy")
 
     publisher = pubsub_v1.PublisherClient()
     subscriber = pubsub_v1.SubscriberClient()
     topic_path = publisher.topic_path(project_id, EVENT_TOPIC_ID)
     subscription_path = subscriber.subscription_path(
         project_id, PROJECTION_SUBSCRIPTION_ID
+    )
+    audit_subscription_path = subscriber.subscription_path(
+        project_id, AUDIT_SUBSCRIPTION_ID
     )
 
     last_error: ServiceUnavailable | None = None
@@ -81,10 +88,14 @@ def provision() -> None:
             _ensure_push_subscription(
                 subscriber, subscription_path, topic_path, push_endpoint
             )
+            _ensure_push_subscription(
+                subscriber, audit_subscription_path, topic_path, audit_endpoint
+            )
             logger.info(
-                "Provisioned local topic %s and push subscription %s",
+                "Provisioned local topic %s and push subscriptions %s and %s",
                 topic_path,
                 subscription_path,
+                audit_subscription_path,
             )
             return
         except ServiceUnavailable as error:

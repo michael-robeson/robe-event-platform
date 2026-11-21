@@ -78,6 +78,48 @@ services:
       timeout: 2s
       retries: 20
 
+  audit-migrate:
+    build:
+      context: .
+      dockerfile: services/audit_consumer/Dockerfile
+    command: ["python", "-m", "robe_event_platform.audit_migrate"]
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: robe_events
+      DATABASE_USER: robe_admin
+      DATABASE_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:?Set POSTGRES_ADMIN_PASSWORD in .env}
+      AUDIT_PROJECTION_DB_PASSWORD: ${AUDIT_PROJECTION_DB_PASSWORD:?Set AUDIT_PROJECTION_DB_PASSWORD in .env}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  audit-consumer:
+    build:
+      context: .
+      dockerfile: services/audit_consumer/Dockerfile
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: robe_events
+      DATABASE_USER: audit_projection_app
+      DATABASE_PASSWORD: ${AUDIT_PROJECTION_DB_PASSWORD:?Set AUDIT_PROJECTION_DB_PASSWORD in .env}
+    depends_on:
+      audit-migrate:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:8082:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz')"
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
   ack-fault-proxy:
     build:
       context: .
@@ -99,6 +141,27 @@ services:
       timeout: 2s
       retries: 20
 
+  audit-ack-fault-proxy:
+    build:
+      context: .
+      dockerfile: tests/vertical_slice/Dockerfile
+    environment:
+      ITEM_PROJECTION_CONSUMER_URL: http://audit-consumer:8000
+    depends_on:
+      audit-consumer:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:9002:9000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9000/healthz')"
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
   pubsub-bootstrap:
     build:
       context: .
@@ -108,10 +171,13 @@ services:
       PUBSUB_EMULATOR_HOST: pubsub:8085
       PUBSUB_PROJECT_ID: robe-local
       PUBSUB_PUSH_ENDPOINT: http://ack-fault-proxy:9000/pubsub/push
+      PUBSUB_AUDIT_PUSH_ENDPOINT: http://audit-ack-fault-proxy:9000/pubsub/push
     depends_on:
       pubsub:
         condition: service_started
       ack-fault-proxy:
+        condition: service_healthy
+      audit-ack-fault-proxy:
         condition: service_healthy
     restart: "no"
 

@@ -48,8 +48,8 @@ here.
   delivery and contract-evolution policies remain to be detailed.
 - **Platform services:** independently deployable, reusable event-driven
   capabilities, with clear ownership and runtime boundaries. The local
-  item-projection consumer is an illustrative first slice, not a product
-  service.
+  item-projection and audit consumers are illustrative local slices, not
+  product services.
 - **Persistence:** ADR-0003 accepts consumer-owned mappings from semantic
   events to storage. Consumers may share PostgreSQL infrastructure, but
   retain separate data ownership and must not modify another consumer's

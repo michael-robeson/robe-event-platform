@@ -35,14 +35,24 @@ jobs:
         run: |
           admin_password=$(openssl rand -hex 24)
           app_password=$(openssl rand -hex 24)
+          audit_password=$(openssl rand -hex 24)
           echo "::add-mask::$admin_password"
           echo "::add-mask::$app_password"
+          echo "::add-mask::$audit_password"
           echo "POSTGRES_ADMIN_PASSWORD=$admin_password" >> "$GITHUB_ENV"
           echo "ITEM_PROJECTION_DB_PASSWORD=$app_password" >> "$GITHUB_ENV"
+          echo "AUDIT_PROJECTION_DB_PASSWORD=$audit_password" >> "$GITHUB_ENV"
+      - name: Start PostgreSQL
+        run: docker compose up --build --wait --wait-timeout 120 postgres
+      - name: Build audit migration image
+        run: docker compose build audit-migrate
+      - name: Verify migration on existing item data
+        run: python -m pytest tests/migration -q
       - name: Start local services
         run: >-
           docker compose up --build --wait --wait-timeout 120
           pubsub postgres publisher item-projection-consumer ack-fault-proxy
+          audit-consumer audit-ack-fault-proxy
       - name: Provision emulator topic and subscription
         run: docker compose run --rm pubsub-bootstrap
       - name: Run end-to-end tests
