@@ -1,33 +1,34 @@
 # Robe Event Platform
 
-Robe Event Platform is a deployable, GCP-targeted reference architecture for
-building event-driven services. It is an independent platform repository, not
-an extension of any application repository.
+Robe Event Platform is evolving toward a composable, event-capable application
+platform. Its current implementation is a local, GCP-targeted reference slice
+for event-driven services. It is an independent platform repository, not an
+extension of any application repository.
 
 ## Purpose and scope
 
-This repository documents and implements reusable platform patterns and
-services for asynchronous integration. Mailflow, Robecruit, and future
-products are external producers or consumers. Their business logic,
-application-specific event contracts, and data models do not belong here.
+The long-term goal is reusable technical and business capabilities that
+applications can compose through explicit boundaries, using events where
+appropriate rather than for every interaction. Mailflow, Robecruit,
+FamilyOfSix, and future products remain external integrations. Their
+product-specific business logic, contracts, and data models do not belong
+here. A shared business capability requires a separately reviewed need and
+ownership boundary.
 
 The first executable increment is a local reference slice that publishes an
 illustrative semantic event through the Pub/Sub emulator and persists
 independently owned item and audit projections in PostgreSQL 17. It does not
 provision cloud resources or implement product integrations.
 
-## Architectural principles
+## Architectural foundation
 
-- **Documentation first:** explain material architectural choices in an
-  Architecture Decision Record (ADR) before implementing them.
-- **Clear boundaries:** keep service code separate from infrastructure and
-  keep product-specific behavior in its owning application.
-- **Cloud-targeted, not cloud-assumed:** target GCP while recording service
-  selections, security posture, and operational requirements as decisions.
-- **Deployable and operable:** future implementations should document how
-  they are configured, deployed, observed, and tested.
-- **Small, explicit increments:** do not add speculative scaffolding or
-  workflows before there is an agreed implementation to support.
+Start with the [platform vision](docs/architecture/platform-vision.md),
+[architectural principles](docs/architecture/principles.md), and
+[conceptual capability model](docs/architecture/capability-model.md).
+These approved foundation documents describe direction and reasoning, not
+new runtime or deployment decisions. The
+[architecture overview](docs/architecture/overview.md#architectural-guidance)
+explains their relationship to accepted ADRs and implementable contracts.
 
 ## Repository navigation
 
