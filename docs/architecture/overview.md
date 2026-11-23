@@ -2,10 +2,11 @@
 
 ## Intent
 
-Robe Event Platform is an independent, GCP-targeted reference architecture
-for reusable event-driven services. It provides patterns and platform-owned
-capabilities that external applications may use; it does not own those
-applications or their business behavior.
+Robe Event Platform is an independent platform repository with a long-term
+vision of composable, event-capable application capabilities. Its current
+GCP-targeted reference architecture demonstrates reusable event-driven
+services. External applications may use platform-owned capabilities; the
+platform does not own those applications or their product-specific behavior.
 
 This is a conceptual view, not a complete deployment design. The initial
 technology stack and Pub/Sub push-to-Cloud-Run service direction are accepted
@@ -22,13 +23,39 @@ guide](../development/first-vertical-slice.md).
 The local read-only workbench and its observation limits are accepted in
 [ADR-0004](../decisions/0004-local-event-platform-workbench.md).
 
+## Architectural guidance
+
+Read the foundation documents together, with distinct roles:
+
+| Artifact | Purpose | Authority and limits |
+| --- | --- | --- |
+| [Platform vision](platform-vision.md) | Destination, motivation, evolutionary growth, and outcome measures | Approved foundation guidance; not a delivery plan or a claim of existing capabilities |
+| [Architectural principles](principles.md) | Guidance for evaluating trade-offs toward the vision | Approved foundation guidance; does not silently amend accepted decisions |
+| [Conceptual capability model](capability-model.md) | Vocabulary for capabilities, responsibilities, and composition | Approved foundation guidance; not a deployment topology, service inventory, or schema |
+| [ADRs](../decisions/README.md) | Record specific architectural choices, alternatives, and consequences | Accepted records govern the choices they settle; changes require a new ADR |
+| Implementable contracts | Specify exact interactions, data meaning, compatibility, and relevant operational obligations | Must be separately defined and reviewed by their owners before consumers rely on them; conceptual examples are not contracts |
+
+This overview connects the long-term foundation to current repository
+boundaries and accepted decisions. The new foundation selects no additional
+technology, runtime, integration protocol, or deployment model. Keep deferred
+choices deferred until a concrete increment supplies the requirements and
+evidence for review.
+
+If a proposed interpretation of the foundation conflicts with an accepted
+ADR, the accepted decision continues to govern until a new ADR explicitly
+supersedes it. Implementable contracts must conform to the applicable
+accepted decisions; neither a contract nor a conceptual example silently
+changes them. Approval of this foundation does not approve its
+illustrative capabilities for implementation.
+
 ## Context and boundaries
 
-Applications such as Mailflow and Robecruit are external to this repository.
-They may produce events for platform services or consume events those
-services publish. They retain ownership of their business rules, application
-data, and application-specific contracts. Future products follow the same
-boundary.
+Applications such as Mailflow, Robecruit, and FamilyOfSix are external to this
+repository. They may produce events for platform services or consume events
+those services publish. The long-term model also allows direct interactions
+when justified; no new direct interface is defined here. Applications retain
+ownership of their business rules, application data, and application-specific
+contracts. Future products follow the same boundary.
 
 The repository may own reusable services and the infrastructure required to
 run them. It does not own a central application or act as a home for
@@ -36,6 +63,28 @@ application-specific integration logic. Integration should use explicitly
 documented interfaces once those are designed. ADR-0002 establishes a shared
 semantic event envelope; product-specific event contracts are not defined
 here.
+
+### Engineering and platform ownership
+
+`robe-engineering` owns shared engineering practices, reusable skills, and
+lifecycle tooling intended for use across repositories. It is not the owner
+of this platform's runtime capabilities or their domain contracts.
+
+`robe-event-platform` owns its platform architecture and ADRs, runtime
+capability implementations, and platform-owned integration contracts.
+Product-specific contracts remain with their external applications.
+Platform-specific infrastructure, tests, operational guidance, and local
+configuration of shared engineering tooling stay with the platform work
+they support.
+
+Consuming a shared skill or lifecycle tool does not transfer platform
+architectural authority to `robe-engineering`. Conversely, using engineering
+practices here does not make their reusable definitions platform runtime
+capabilities. General-purpose improvements belong in `robe-engineering`;
+platform-specific application and validation belong here. This boundary
+clarifies responsibility without selecting a distribution mechanism,
+moving existing files, or changing the accepted runtime and deployment
+decisions.
 
 ## Conceptual components
 
