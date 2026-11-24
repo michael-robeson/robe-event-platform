@@ -31,6 +31,9 @@ implementation here.
 - The configured pull-request checks are `Unit tests` and
   `Pub/Sub and PostgreSQL integration`. Verify their actual GitHub status;
   configuration alone does not establish server-side branch protection.
+- Create the project `.venv` and install the test extra as documented in the
+  first vertical-slice guide; the readiness gate invokes that environment
+  directly.
 - The local end-to-end, migration, and workbench tests can stop/restart the
   Compose PostgreSQL service, require local credentials, or leave test rows.
   Run them only against an authorized local test stack and with explicit

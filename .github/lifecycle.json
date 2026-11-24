@@ -8,8 +8,8 @@
   },
   "readiness_gate": {
     "commands": [
-      ["python3", "-m", "compileall", "-q", "src", "tests"],
-      ["python3", "-m", "pytest", "tests/unit", "-q"]
+      [".venv/bin/python", "-m", "compileall", "-q", "src", "tests"],
+      [".venv/bin/python", "-m", "pytest", "tests/unit", "-q"]
     ]
   },
   "integration_gate": {
