@@ -14,5 +14,10 @@
   schemas, or CI/CD workflows without an explicit task and reviewed decisions.
 - Prefer focused validation relevant to the change; document required setup
   when implementation introduces it.
-- Follow the [feature-lifecycle skill](.github/skills/feature-lifecycle/SKILL.md)
-  for feature branch, PR, merge, and cleanup procedures.
+- Use `eng-lifecycle` from `PATH`, configured by `.github/lifecycle.json`, for
+  feature startup, commits, readiness, review, and integration. Follow the
+  [feature-lifecycle skill](.github/skills/feature-lifecycle/SKILL.md) for
+  repository-specific safety requirements.
+- For material implementation increments, apply
+  [ADR-0005](docs/decisions/0005-evolutionary-architecture-and-incremental-delivery.md)
+  proportionately; do not restate it as a separate checklist.
