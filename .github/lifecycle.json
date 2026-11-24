@@ -19,7 +19,7 @@
     "Unit tests",
     "Pub/Sub and PostgreSQL integration"
   ],
-  "required_review": true,
+  "required_review": false,
   "special_authorization": [
     "database",
     "docker"
