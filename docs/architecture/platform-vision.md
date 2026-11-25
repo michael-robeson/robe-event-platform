@@ -35,9 +35,9 @@ repositories. A potential cross-application business capability requires
 evidence of shared meaning and an explicitly reviewed ownership boundary
 before it becomes platform-owned.
 
-This platform is not the shared engineering toolkit. `robe-engineering`
+This platform is not the shared engineering toolkit. `robe-engineer`
 owns cross-repository engineering practices, skills, and lifecycle tooling;
-`robe-event-platform` owns platform architecture, runtime capabilities, and
+`robe-platform-event` owns platform architecture, runtime capabilities, and
 platform-owned contracts. The
 [repository ownership boundary](overview.md#engineering-and-platform-ownership)
 explains how shared guidance and platform-specific responsibilities coexist.

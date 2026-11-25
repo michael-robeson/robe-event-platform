@@ -1,3 +1,5 @@
+name: robe-event-platform
+
 services:
   pubsub:
     image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators

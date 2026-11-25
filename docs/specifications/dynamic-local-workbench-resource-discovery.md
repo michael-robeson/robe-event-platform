@@ -1,7 +1,7 @@
 # Dynamic Local Workbench Resource Discovery
 
 **Status:** Accepted for future implementation  
-**Capability owner:** robe-event-platform Workbench  
+**Capability owner:** robe-platform-event Workbench  
 **Intended users:** Developers using the local Workbench
 
 ## Purpose and boundaries
