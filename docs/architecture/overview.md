@@ -66,11 +66,11 @@ here.
 
 ### Engineering and platform ownership
 
-`robe-engineering` owns shared engineering practices, reusable skills, and
+`robe-engineer` owns shared engineering practices, reusable skills, and
 lifecycle tooling intended for use across repositories. It is not the owner
 of this platform's runtime capabilities or their domain contracts.
 
-`robe-event-platform` owns its platform architecture and ADRs, runtime
+`robe-platform-event` owns its platform architecture and ADRs, runtime
 capability implementations, and platform-owned integration contracts.
 Product-specific contracts remain with their external applications.
 Platform-specific infrastructure, tests, operational guidance, and local
@@ -78,9 +78,9 @@ configuration of shared engineering tooling stay with the platform work
 they support.
 
 Consuming a shared skill or lifecycle tool does not transfer platform
-architectural authority to `robe-engineering`. Conversely, using engineering
+architectural authority to `robe-engineer`. Conversely, using engineering
 practices here does not make their reusable definitions platform runtime
-capabilities. General-purpose improvements belong in `robe-engineering`;
+capabilities. General-purpose improvements belong in `robe-engineer`;
 platform-specific application and validation belong here. This boundary
 clarifies responsibility without selecting a distribution mechanism,
 moving existing files, or changing the accepted runtime and deployment

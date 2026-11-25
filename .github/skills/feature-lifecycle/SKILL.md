@@ -1,6 +1,6 @@
 ---
 name: feature-lifecycle
-description: "Manage robe-event-platform work with the shared eng-lifecycle CLI, from startup through verified integration."
+description: "Manage robe-platform-event work with the shared eng-lifecycle CLI, from startup through verified integration."
 ---
 
 # Feature lifecycle
@@ -12,7 +12,7 @@ implementation here.
 
 ## Setup and start
 
-- Follow the `robe-engineering` README's lifecycle CLI setup before use.
+- Follow the `robe-engineer` README's lifecycle CLI setup before use.
 - From this repository's root, run `eng-lifecycle start --repo .`. Continue on
   the clean generated branch it reports; do not supply a branch name or scope.
 - If `.github/lifecycle.json` is absent, treat that as a lifecycle-adoption

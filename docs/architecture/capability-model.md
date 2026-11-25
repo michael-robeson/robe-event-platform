@@ -52,8 +52,8 @@ needs a reviewed shared need and ownership decision. This model does not
 move any Robecruit, FamilyOfSix, or Mailflow domain into this repository.
 
 Shared engineering practices, skills, and lifecycle tooling belong to
-`robe-engineering`, not to a platform runtime capability family.
-`robe-event-platform` owns platform architecture, runtime capabilities, and
+`robe-engineer`, not to a platform runtime capability family.
+`robe-platform-event` owns platform architecture, runtime capabilities, and
 platform-owned contracts, while applying shared engineering guidance locally.
 See the [repository ownership boundary](overview.md#engineering-and-platform-ownership)
 for the distinction between shared tooling and platform-specific use.
