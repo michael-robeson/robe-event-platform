@@ -84,6 +84,73 @@ def emulator_status() -> dict[str, dict[str, str]]:
     return results
 
 
+def _unknown_inventory(kind: str, resources: list[dict[str, str]] | None = None) -> dict:
+    return {
+        "status": "unknown",
+        "resources": resources or [],
+        "error": f"{kind} discovery unavailable",
+    }
+
+
+def _discover_topics(project_path: str) -> dict:
+    resources = []
+    publisher = None
+    try:
+        publisher = pubsub_v1.PublisherClient()
+        for topic in publisher.list_topics(
+            request={"project": project_path}, retry=None, timeout=2,
+        ):
+            resources.append({"name": topic.name})
+    except GoogleAPICallError:
+        logger.exception("Could not discover local Pub/Sub topics")
+        return _unknown_inventory("Topic", resources)
+    finally:
+        if publisher is not None:
+            publisher.transport.close()
+    return {"status": "available", "resources": resources}
+
+
+def _discover_subscriptions(project_path: str) -> dict:
+    resources = []
+    subscriber = None
+    try:
+        subscriber = pubsub_v1.SubscriberClient()
+        for subscription in subscriber.list_subscriptions(
+            request={"project": project_path}, retry=None, timeout=2,
+        ):
+            resources.append({
+                "name": subscription.name,
+                "topic": subscription.topic,
+            })
+    except GoogleAPICallError:
+        logger.exception("Could not discover local Pub/Sub subscriptions")
+        return _unknown_inventory("Subscription", resources)
+    finally:
+        if subscriber is not None:
+            subscriber.transport.close()
+    return {"status": "available", "resources": resources}
+
+
+@app.get("/api/v1/pubsub/resources")
+def pubsub_resources() -> dict:
+    try:
+        host, project = require_local_pubsub()
+        if host != LOCAL_EMULATOR_HOST or project != LOCAL_PROJECT_ID:
+            raise RuntimeError("Workbench only permits the local emulator")
+    except RuntimeError:
+        logger.exception("Local emulator configuration is unavailable")
+        return {
+            "topics": _unknown_inventory("Topic"),
+            "subscriptions": _unknown_inventory("Subscription"),
+        }
+
+    project_path = f"projects/{project}"
+    return {
+        "topics": _discover_topics(project_path),
+        "subscriptions": _discover_subscriptions(project_path),
+    }
+
+
 @app.get("/api/v1/status")
 def status() -> dict:
     services = {
