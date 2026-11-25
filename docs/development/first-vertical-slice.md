@@ -110,23 +110,78 @@ the environment password does not rotate the stored password; restore the
 original or explicitly administer rotation. Existing unexpected or
 privileged workbench roles cause provisioning to fail.
 
-The UI shows HTTP liveness, a database connection check, emulator resource
-configuration, and independently observed database records. A missing row
-does not establish failure, and an unavailable source is unknown. A stored
-row does not prove publication, delivery, or acknowledgment. Timestamps are
-database transaction-time values, not commit timestamps; sorting and
-pagination are best effort and do not establish global order or complete
-history. The item observation list uses ledger rows; an item projection
-without a ledger entry is discoverable only by inspecting its event UUID.
-Audit fields are stored projection values, not a raw event archive.
-Partial list results do not offer a next-page cursor; refresh after recovery.
-The tool has no Docker, publishing, experiment, or fault-control interface.
+The UI shows HTTP liveness, a database connection check, known-resource
+diagnostics, a dynamically refreshed inventory of emulator topics and
+subscriptions with their reported topic relationships, and independently
+observed database records. A missing row does not establish failure, and an
+unavailable source is unknown. A stored row does not prove publication,
+delivery, or acknowledgment. Timestamps are database transaction-time values,
+not commit timestamps; sorting and pagination are best effort and do not
+establish global order or complete history. The item observation list uses
+ledger rows; an item projection without a ledger entry is discoverable only by
+inspecting its event UUID. Audit fields are stored projection values, not a
+raw event archive. Partial list results do not offer a next-page cursor;
+refresh after recovery. The tool has no Docker, publishing, experiment, or
+fault-control interface.
 
 After exporting `.env`, `pytest tests/workbench -q` verifies the workbench
 against the running local stack. It publishes a uniquely identified demo
 event and leaves the resulting rows in the local database. Use it only with
 an authorized test stack. The workbench is intended only for trusted local
 development, not deployment or production observability.
+
+To verify that resource discovery updates without a Workbench restart, create
+resources directly in the local emulator while the Workbench is running. These
+commands change only the emulator; the Workbench inventory endpoint performs
+read operations only. From the repository root, run:
+
+```sh
+PUBSUB_EMULATOR_HOST=127.0.0.1:8085 PUBSUB_PROJECT_ID=robe-local .venv/bin/python - <<'PY'
+from google.cloud import pubsub_v1
+
+project = "robe-local"
+publisher = pubsub_v1.PublisherClient()
+subscriber = pubsub_v1.SubscriberClient()
+topic = publisher.topic_path(project, "workbench-discovery-demo")
+empty_topic = publisher.topic_path(project, "workbench-discovery-empty")
+publisher.create_topic(request={"name": topic})
+publisher.create_topic(request={"name": empty_topic})
+for subscription_id in ("workbench-discovery-one", "workbench-discovery-two"):
+    subscriber.create_subscription(request={
+        "name": subscriber.subscription_path(project, subscription_id),
+        "topic": topic,
+    })
+publisher.transport.close()
+subscriber.transport.close()
+PY
+```
+
+Select **Refresh** in the Workbench. Both topics and subscriptions should
+appear, including both subscriptions' reported relationship to the first
+topic and the second topic with no subscriptions. Then remove only those
+resources from the emulator and refresh again:
+
+```sh
+PUBSUB_EMULATOR_HOST=127.0.0.1:8085 PUBSUB_PROJECT_ID=robe-local .venv/bin/python - <<'PY'
+from google.cloud import pubsub_v1
+
+project = "robe-local"
+publisher = pubsub_v1.PublisherClient()
+subscriber = pubsub_v1.SubscriberClient()
+for subscription_id in ("workbench-discovery-one", "workbench-discovery-two"):
+    subscriber.delete_subscription(
+        request={"subscription": subscriber.subscription_path(project, subscription_id)}
+    )
+for topic_id in ("workbench-discovery-demo", "workbench-discovery-empty"):
+    publisher.delete_topic(request={"topic": publisher.topic_path(project, topic_id)})
+publisher.transport.close()
+subscriber.transport.close()
+PY
+```
+
+If these example IDs already exist, substitute a unique suffix in both
+commands. The emulator's topic and subscription inventory is independent of
+the Workbench's read-only API.
 
 The Pub/Sub emulator supports local HTTP push but does not validate
 production HTTPS push authentication or IAM. Its message retention is not

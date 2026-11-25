@@ -4,6 +4,8 @@ import "./style.css";
 
 type Check = { status: string; kind?: string; name?: string; topic?: string; push_endpoint?: string };
 type Status = { checked_at: string; services: Record<string, Check>; database: Check; emulator_resources: Record<string, Check> };
+type ResourceGroup = { status: "available" | "unknown"; resources: { name: string; topic?: string }[]; error?: string };
+type PubSubInventory = { topics: ResourceGroup; subscriptions: ResourceGroup };
 type Observation = { consumer: string; event_id: string; event_type: string; contract_version: string; source: string; occurred_at: string; recorded_at: string };
 type Page = { observations: Observation[]; sources: Record<string, string>; next_cursor: string | null };
 type EventDetail = { event_id: string; sources: Record<string, { status: string; record: Record<string, unknown> | null }> };
@@ -16,20 +18,32 @@ async function get<T>(path: string): Promise<T> {
 
 function App() {
   const [status, setStatus] = useState<Status | null>(null);
+  const [inventory, setInventory] = useState<PubSubInventory | null>(null);
   const [page, setPage] = useState<Page | null>(null);
   const [detail, setDetail] = useState<EventDetail | null>(null);
   const [filter, setFilter] = useState("all");
   const [eventId, setEventId] = useState("");
   const [statusError, setStatusError] = useState("");
+  const [inventoryError, setInventoryError] = useState("");
   const [listError, setListError] = useState("");
   const [detailError, setDetailError] = useState("");
   const [loading, setLoading] = useState(false);
   const listRequest = useRef(0);
   const detailRequest = useRef(0);
+  const inventoryRequest = useRef(0);
 
   async function refreshStatus() {
     try { setStatus(await get<Status>("/api/v1/status")); setStatusError(""); }
     catch (error) { setStatus(null); setStatusError(String(error)); }
+  }
+  async function refreshInventory() {
+    const request = ++inventoryRequest.current;
+    try {
+      const result = await get<PubSubInventory>("/api/v1/pubsub/resources");
+      if (request === inventoryRequest.current) { setInventory(result); setInventoryError(""); }
+    } catch (error) {
+      if (request === inventoryRequest.current) { setInventory(null); setInventoryError(String(error)); }
+    }
   }
   async function loadPage(selected: string, cursor?: string) {
     const request = ++listRequest.current;
@@ -54,13 +68,13 @@ function App() {
     }
     catch (error) { if (request === detailRequest.current) { setDetail(null); setDetailError(String(error)); } }
   }
-  useEffect(() => { void refreshStatus(); void loadPage("all"); }, []);
+  useEffect(() => { void refreshStatus(); void refreshInventory(); void loadPage("all"); }, []);
 
   return <main>
     <header>
       <div><p className="eyebrow">LOCAL DEVELOPMENT / READ ONLY</p><h1>Event Platform Workbench</h1>
       <p>Inspect independently persisted consumer records—not a publication or delivery history.</p></div>
-      <button onClick={() => { void refreshStatus(); void loadPage(filter); }}>Refresh</button>
+      <button onClick={() => { void refreshStatus(); void refreshInventory(); void loadPage(filter); }}>Refresh</button>
     </header>
     <section aria-labelledby="status-heading">
       <div className="section-title"><h2 id="status-heading">Local status</h2><span>{status && `Checked ${new Date(status.checked_at).toLocaleString()}`}</span></div>
@@ -71,6 +85,35 @@ function App() {
         {Object.entries(status.emulator_resources).map(([name, check]) => <div className="status-card" key={name}><strong>{name.replaceAll("_", " ")}</strong><span>Configuration: {check.status}</span>{check.name && <small>{check.name}</small>}{check.topic && <small>Topic: {check.topic}</small>}{check.push_endpoint && <small>Push: {check.push_endpoint}</small>}</div>)}
       </div>}
       <p className="note">Liveness does not verify database processing. Emulator checks only inspect resource configuration.</p>
+    </section>
+    <section aria-labelledby="pubsub-heading">
+      <h2 id="pubsub-heading">Pub/Sub resources</h2>
+      {inventoryError && <p role="alert">{inventoryError}</p>}
+      {inventory && <>
+        <div className="pubsub-grid">
+          <div className="pubsub-group">
+            <h3>Topics <span className="badge">{inventory.topics.status}</span></h3>
+            {inventory.topics.status === "unknown" && <p className="resource-warning" role="status">{inventory.topics.error}; shown results may be incomplete.</p>}
+            {inventory.topics.status === "available" && inventory.topics.resources.length === 0 && <p>No topics discovered.</p>}
+            <ul className="resource-list">{inventory.topics.resources.map((topic) =>
+              <li className="resource-item" key={topic.name}><code>{topic.name}</code></li>
+            )}</ul>
+          </div>
+          <div className="pubsub-group">
+            <h3>Subscriptions <span className="badge">{inventory.subscriptions.status}</span></h3>
+            {inventory.subscriptions.status === "unknown" && <p className="resource-warning" role="status">{inventory.subscriptions.error}; shown results may be incomplete.</p>}
+            {inventory.subscriptions.status === "available" && inventory.subscriptions.resources.length === 0 && <p>No subscriptions discovered.</p>}
+            <ul className="resource-list">{inventory.subscriptions.resources.map((subscription) => {
+              const resolved = inventory.topics.resources.some((topic) => topic.name === subscription.topic);
+              return <li className="resource-item" key={subscription.name}>
+                <code>{subscription.name}</code>
+                <small>Topic: <code>{subscription.topic}</code>{resolved ? "" : " (unresolved in this inventory)"}</small>
+              </li>;
+            })}</ul>
+          </div>
+        </div>
+        <p className="note">This is observed emulator configuration only; it does not establish publication, delivery, or consumer processing.</p>
+      </>}
     </section>
     <div className="columns">
       <section aria-labelledby="observations-heading">
