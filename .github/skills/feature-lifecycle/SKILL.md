@@ -50,9 +50,13 @@ implementation here.
   or `resume` only after approval. The CLI validates the configured CI,
   review policy, merge eligibility, and unresolved conversations; do not
   bypass a failed check, required review, conflict, or safety concern.
-- The configured review policy requires an approving review. Any
-  administrator bypass requires explicit authorization for that specific
-  PR; full-lifecycle authorization alone is not a bypass.
+- The configured `required_review: false` matches the established
+  single-developer policy: an independent GitHub review is not required. The
+  owner's exact `APPROVED` message for the candidate and all configured CI
+  checks remain mandatory. Honor any GitHub-required review or other
+  protection if enabled; an administrator bypass requires explicit
+  authorization for that specific PR and must not evade failed checks or
+  unresolved concerns.
 - Confirm the PR is merged and allow the CLI's safe cleanup and synchronized
   next-branch creation to complete. Report any GitHub protection or CI
   enforcement gap.

@@ -5,6 +5,13 @@ platform. Its current implementation is a local, GCP-targeted reference slice
 for event-driven services. It is an independent platform repository, not an
 extension of any application repository.
 
+> Maintained by [Robe Land](https://github.com/robe-land).
+>
+> Original work is licensed under [LICENSE](LICENSE). Third-party
+> materials retain their applicable licenses and copyright notices; see
+> the notices accompanying those materials and the repository's
+> third-party attribution index, where applicable.
+
 ## Purpose and scope
 
 The long-term goal is reusable technical and business capabilities that
