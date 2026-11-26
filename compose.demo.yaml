@@ -1,0 +1,180 @@
+services:
+  postgres:
+    profiles: [demo]
+    build:
+      context: .
+      dockerfile: services/item_projection_consumer/db/Dockerfile
+    environment:
+      POSTGRES_DB: robe_events
+      POSTGRES_USER: robe_admin
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:?Set POSTGRES_ADMIN_PASSWORD in .env}
+      ITEM_PROJECTION_DB_PASSWORD: ${ITEM_PROJECTION_DB_PASSWORD:?Set ITEM_PROJECTION_DB_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  publisher:
+    profiles: [demo]
+    build:
+      context: .
+      dockerfile: apps/vertical_slice_publisher/Dockerfile
+    environment:
+      PUBSUB_EMULATOR_HOST: pubsub:8085
+      PUBSUB_PROJECT_ID: robe-local
+    depends_on:
+      pubsub:
+        condition: service_started
+    ports:
+      - "127.0.0.1:8080:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz')"
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  item-projection-consumer:
+    profiles: [demo]
+    build:
+      context: .
+      dockerfile: services/item_projection_consumer/Dockerfile
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: robe_events
+      DATABASE_USER: item_projection_app
+      DATABASE_PASSWORD: ${ITEM_PROJECTION_DB_PASSWORD:?Set ITEM_PROJECTION_DB_PASSWORD in .env}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8081:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz')"
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  audit-migrate:
+    profiles: [demo]
+    build:
+      context: .
+      dockerfile: services/audit_consumer/Dockerfile
+    command: ["python", "-m", "robe_event_platform.audit_migrate"]
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: robe_events
+      DATABASE_USER: robe_admin
+      DATABASE_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:?Set POSTGRES_ADMIN_PASSWORD in .env}
+      AUDIT_PROJECTION_DB_PASSWORD: ${AUDIT_PROJECTION_DB_PASSWORD:?Set AUDIT_PROJECTION_DB_PASSWORD in .env}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  audit-consumer:
+    profiles: [demo]
+    build:
+      context: .
+      dockerfile: services/audit_consumer/Dockerfile
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: robe_events
+      DATABASE_USER: audit_projection_app
+      DATABASE_PASSWORD: ${AUDIT_PROJECTION_DB_PASSWORD:?Set AUDIT_PROJECTION_DB_PASSWORD in .env}
+    depends_on:
+      audit-migrate:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:8082:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz')"
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  ack-fault-proxy:
+    profiles: [demo]
+    build:
+      context: .
+      dockerfile: tests/vertical_slice/Dockerfile
+    environment:
+      ITEM_PROJECTION_CONSUMER_URL: http://item-projection-consumer:8000
+    depends_on:
+      item-projection-consumer:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:9001:9000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9000/healthz')"
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  audit-ack-fault-proxy:
+    profiles: [demo]
+    build:
+      context: .
+      dockerfile: tests/vertical_slice/Dockerfile
+    environment:
+      ITEM_PROJECTION_CONSUMER_URL: http://audit-consumer:8000
+    depends_on:
+      audit-consumer:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:9002:9000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9000/healthz')"
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  pubsub-bootstrap:
+    profiles: [demo]
+    build:
+      context: .
+      dockerfile: apps/vertical_slice_publisher/Dockerfile
+    command: ["python", "-m", "robe_event_platform.pubsub_bootstrap"]
+    environment:
+      PUBSUB_EMULATOR_HOST: pubsub:8085
+      PUBSUB_PROJECT_ID: robe-local
+      PUBSUB_PUSH_ENDPOINT: http://ack-fault-proxy:9000/pubsub/push
+      PUBSUB_AUDIT_PUSH_ENDPOINT: http://audit-ack-fault-proxy:9000/pubsub/push
+    depends_on:
+      pubsub:
+        condition: service_started
+      ack-fault-proxy:
+        condition: service_healthy
+      audit-ack-fault-proxy:
+        condition: service_healthy
+    restart: "no"
+
+volumes:
+  postgres-data:

@@ -15,7 +15,8 @@
 - Prefer focused validation relevant to the change; document required setup
   when implementation introduces it.
 - Use `eng-lifecycle` from `PATH`, configured by `.github/lifecycle.json`, for
-  feature startup, commits, readiness, review, and integration. Follow the
+  feature start or continuation, scoped commits, readiness, architectural
+  review, approval, and integration. Follow the
   [feature-lifecycle skill](.github/skills/feature-lifecycle/SKILL.md) for
   repository-specific safety requirements.
 - For material implementation increments, apply

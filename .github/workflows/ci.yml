@@ -46,22 +46,22 @@ jobs:
           echo "AUDIT_PROJECTION_DB_PASSWORD=$audit_password" >> "$GITHUB_ENV"
           echo "WORKBENCH_DB_PASSWORD=$workbench_password" >> "$GITHUB_ENV"
       - name: Start PostgreSQL
-        run: docker compose up --build --wait --wait-timeout 120 postgres
+        run: docker compose --profile demo -f compose.yaml -f compose.demo.yaml up --build --wait --wait-timeout 120 postgres
       - name: Build audit migration image
-        run: docker compose build audit-migrate
+        run: docker compose --profile demo -f compose.yaml -f compose.demo.yaml build audit-migrate
       - name: Verify migration on existing item data
         run: python -m pytest tests/migration -q
       - name: Start local services
         run: >-
-          docker compose up --build --wait --wait-timeout 120
+          docker compose --profile demo -f compose.yaml -f compose.demo.yaml up --build --wait --wait-timeout 120
           pubsub postgres publisher item-projection-consumer ack-fault-proxy
           audit-consumer audit-ack-fault-proxy
       - name: Provision emulator topic and subscription
-        run: docker compose run --rm pubsub-bootstrap
+        run: docker compose --profile demo -f compose.yaml -f compose.demo.yaml run --rm pubsub-bootstrap
       - name: Start the workbench
-        run: docker compose -f compose.yaml -f compose.workbench.yaml up --build --wait --wait-timeout 120 workbench
+        run: docker compose --profile demo -f compose.yaml -f compose.demo.yaml -f compose.workbench.yaml up --build --wait --wait-timeout 120 workbench
       - name: Run end-to-end tests
         run: python -m pytest tests/e2e tests/workbench -q
       - name: Show service logs on failure
         if: failure()
-        run: docker compose logs --no-color
+        run: docker compose --profile demo -f compose.yaml -f compose.demo.yaml -f compose.workbench.yaml logs --no-color

@@ -39,6 +39,20 @@ def database_connection() -> psycopg.Connection[tuple]:
     )
 
 
+def compose_command(*arguments: str) -> list[str]:
+    return [
+        "docker",
+        "compose",
+        "--profile",
+        "demo",
+        "-f",
+        "compose.yaml",
+        "-f",
+        "compose.demo.yaml",
+        *arguments,
+    ]
+
+
 def make_event(
     *,
     event_id: UUID | None = None,
@@ -214,7 +228,7 @@ def test_database_failure_recovers_and_processes_once() -> None:
     event_id = event["event_id"]
     stopped = False
     subprocess.run(
-        ["docker", "compose", "stop", "postgres"],
+        compose_command("stop", "postgres"),
         cwd=ROOT,
         check=True,
         capture_output=True,
@@ -227,7 +241,7 @@ def test_database_failure_recovers_and_processes_once() -> None:
     finally:
         if stopped:
             subprocess.run(
-                ["docker", "compose", "start", "postgres"],
+                compose_command("start", "postgres"),
                 cwd=ROOT,
                 check=True,
                 capture_output=True,

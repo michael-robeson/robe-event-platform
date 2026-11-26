@@ -23,8 +23,8 @@ if [ ! -e .env ]; then cp .env.example .env; fi
 python3 -m venv .venv
 . .venv/bin/activate
 pip install -e '.[test]'
-docker compose up --build -d pubsub postgres publisher item-projection-consumer ack-fault-proxy audit-consumer audit-ack-fault-proxy
-docker compose run --rm pubsub-bootstrap
+docker compose --profile demo -f compose.yaml -f compose.demo.yaml up --build -d pubsub postgres publisher item-projection-consumer ack-fault-proxy audit-consumer audit-ack-fault-proxy
+docker compose --profile demo -f compose.yaml -f compose.demo.yaml run --rm pubsub-bootstrap
 ```
 
 The bootstrap uses the Pub/Sub client library to create `demo-events` and
@@ -33,6 +33,20 @@ its own test-only proxy, which normally forwards to its consumer and can
 inject a one-time lost response after commit. The publisher is available at
 `http://127.0.0.1:8080`; the item and audit consumer test endpoints are at
 `http://127.0.0.1:8081` and `http://127.0.0.1:8082`.
+
+The base `compose.yaml` contains only the reusable Pub/Sub emulator.
+Start it for independent service development with
+`docker compose up -d pubsub`; this requires no Platform database
+credentials. The emulator joins the stable Platform-owned Docker network
+`robe-event-platform-dev`. Independently maintained local service Compose
+projects can attach to that network and reach the emulator as `pubsub:8085`;
+the host-mapped endpoint remains `127.0.0.1:8085`.
+
+The existing publisher, Item and Audit consumers, their test proxies,
+PostgreSQL, and demo bootstrap remain in `compose.demo.yaml` behind the
+`demo` profile. Their implementation and integration tests remain in this
+repository and are run by combining `compose.yaml` and `compose.demo.yaml`
+with `--profile demo`.
 
 The custom PostgreSQL initialization image copies the init script and SQL
 into the image instead of bind-mounting them from the workspace. This avoids
@@ -52,7 +66,8 @@ versioned audit schema in a transaction, including on an existing volume,
 without modifying item-consumer data. Re-running it verifies the recorded
 version and checksum and confirms the audit login. It does not rotate existing
 passwords; an unexpected pre-existing audit schema or role causes an explicit
-failure. To run it independently, use `docker compose run --rm audit-migrate`.
+failure. To run it independently, use
+`docker compose --profile demo -f compose.yaml -f compose.demo.yaml run --rm audit-migrate`.
 The non-login schema owner is separate from the audit runtime role, which can
 insert audit records and read only their IDs and content hashes, but cannot
 modify or delete them. The audit projection retains the validated event
@@ -72,6 +87,11 @@ events and leave existing rows intact; new test rows remain in the demo
 database. One scenario stops and restarts the Compose `postgres` service, so
 do not run the suite while others depend on it. Tests use the loopback-mapped
 demo database and do not target GCP.
+
+For regression verification while the local development stack is in use, use
+the `Pub/Sub and PostgreSQL integration` GitHub Actions check on a pull
+request. It runs the Compose services and tests on an isolated runner, not
+against the developer's running containers or local database.
 
 ```sh
 set -a
@@ -98,7 +118,7 @@ Set `WORKBENCH_DB_PASSWORD` in `.env` to a separate local-only password.
 With the services and subscriptions started above, run:
 
 ```sh
-docker compose -f compose.yaml -f compose.workbench.yaml up --build -d workbench
+docker compose --profile demo -f compose.yaml -f compose.demo.yaml -f compose.workbench.yaml up --build -d workbench
 ```
 
 Open `http://127.0.0.1:8083`. The optional overlay provisions a dedicated
