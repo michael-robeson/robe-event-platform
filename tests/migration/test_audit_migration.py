@@ -32,7 +32,20 @@ def test_audit_migration_preserves_existing_item_data_and_is_repeatable() -> Non
 
     for _ in range(2):
         subprocess.run(
-            ["docker", "compose", "run", "--rm", "--no-deps", "audit-migrate"],
+            [
+                "docker",
+                "compose",
+                "--profile",
+                "demo",
+                "-f",
+                "compose.yaml",
+                "-f",
+                "compose.demo.yaml",
+                "run",
+                "--rm",
+                "--no-deps",
+                "audit-migrate",
+            ],
             cwd=ROOT,
             check=True,
             capture_output=True,
