@@ -75,6 +75,22 @@ fields indefinitely for this demonstration, not arbitrary raw payloads.
 
 ## Verify
 
+For lifecycle candidate preparation and metadata checks, install the pinned
+shared Engineering CLI into the project virtual environment:
+
+```sh
+. .venv/bin/activate
+python -m pip install -r .github/requirements-metadata.txt
+```
+
+In Fish, activate it with `source .venv/bin/activate.fish` instead. Use
+`eng-lifecycle` from this activated environment so scoped commits
+automatically generate the Python badge from the staged manifest. The
+readiness and CI metadata checks are non-mutating; they fail on drift.
+The badge JSON is committed before candidate review and approval. The
+version is pinned in the requirements file and may be updated by repository
+owners after reviewing a newer Engineering revision.
+
 Unit tests:
 
 ```sh

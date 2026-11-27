@@ -13,7 +13,10 @@ implementation here.
 
 ## Start, continue, and recover
 
-- Follow the `robe-engineer` README's lifecycle CLI setup before use.
+- Install the pinned CLI from `.github/requirements-metadata.txt` into the
+  project `.venv` and activate that environment before lifecycle operations,
+  as documented in the local development guide. Use its `eng-lifecycle`
+  from `PATH` so candidate preparation uses the reviewed version.
 - For a **new feature**, run `eng-lifecycle start --repo .` from this
   repository root. Continue on the clean generated branch it reports; do not
   supply a branch name or feature scope.
@@ -41,7 +44,8 @@ implementation here.
   task-scoped paths. The CLI refuses a pre-populated index.
 - Run `eng-lifecycle review --repo . --feature <branch> --criteria "..."`
   against the clean committed candidate. The configured readiness checks
-  compile the Python sources and tests, then run `tests/unit`.
+  compile the Python sources and tests, run `tests/unit`, and check generated
+  metadata without modifying it.
 - Perform architectural review separately from readiness checks and record
   its decision and evidence for the same candidate:
   `eng-lifecycle architecture-review --repo . --feature <branch> --criteria

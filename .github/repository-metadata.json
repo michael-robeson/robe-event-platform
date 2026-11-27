@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "badges": [
+    {
+      "adapter": "python-requires",
+      "source": "pyproject.toml",
+      "output": ".github/badges/python.json"
+    }
+  ]
+}
