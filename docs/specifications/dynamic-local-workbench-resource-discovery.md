@@ -14,14 +14,14 @@ topics, subscriptions, and their relationships. Developers can inspect
 declared service identity and messaging, observed health, and runtime
 configuration without joining the event-processing path.
 
-The Workbench remains local-only and read-only. It does not publish, pull,
-acknowledge, create, update, or delete Pub/Sub resources, write consumer data,
-or connect to GCP. The existing demonstration status, inventory, consumer
-observations, and event inspection remain available in a separate reference
-view.
+The Workbench remains local-only. Discovery is read-only. An explicitly
+enabled interactive control may publish one synthetic message at a time to an
+observed local emulator topic. The Workbench does not pull or acknowledge
+messages, create, update, or delete Pub/Sub resources, write consumer data,
+or connect to GCP. Existing demonstration diagnostics remain separate.
 
-Synthetic publication, message inspection, consumer-processing visibility,
-correlation tracking, performance benchmarking, remote access,
+Message capture, downstream tracing, bulk publication, performance
+benchmarking, remote access,
 multi-tenancy, and sensitive payload access are outside this increment.
 
 ## Context and authoritative sources
@@ -31,7 +31,7 @@ multi-tenancy, and sensitive payload access are outside this increment.
 - The [descriptor schema](../contracts/workbench-service-descriptor.v1.schema.json)
   is authoritative for the version 1 service interface.
 - [ADR-0004](../decisions/0004-local-event-platform-workbench.md) continues to
-  define the Workbench's read-only boundary and observation limits.
+  define the Workbench's local publication boundary and observation limits.
 - [ADR-0005](../decisions/0005-evolutionary-architecture-and-incremental-delivery.md)
   distinguishes implementation needs from deferred capabilities.
 - [ADR-0002](../decisions/0002-messaging-and-reliability.md) remains
@@ -82,6 +82,17 @@ multi-tenancy, and sensitive payload access are outside this increment.
    remains inspectable. A broker-reported dead-letter policy connects its
    subscription to the configured topic and does not assert forwarding
    occurred or that a service published the dead letter.
+10. A service may advertise named synthetic templates for declared topics,
+    referring to same-origin JSON message and JSON Schema endpoints. Existing
+    descriptors without templates remain valid. The service generates fresh
+    identities; the Workbench does not implement service-specific contracts.
+11. Publication is disabled by default, requires a local emulator and a
+    loopback Workbench request with explicit intent, and only targets observed
+    local topics with a currently declared template. Before publishing, the
+    Workbench validates the edited message against the service-owned Draft
+    2020-12 schema without retrieving external references. It preserves the
+    message envelope and reports broker acceptance and available identifiers
+    without inferring downstream success. A timeout is an unknown outcome.
 
 ## Acceptance evidence
 
@@ -101,6 +112,10 @@ multi-tenancy, and sensitive payload access are outside this increment.
 - Review verifies that the composed Workbench reads the existing shared
   network and Pub/Sub emulator without changing Gmail resources, consumer
   data, or message flow.
+- Selecting an observed topic offers its service-owned templates. A developer
+  can inspect the generated envelope, edit the payload, and explicitly
+  publish; invalid contracts, payloads, unavailable providers, disabled
+  publication, and nonlocal configurations do not publish.
 
 ## Dependencies and unresolved points
 

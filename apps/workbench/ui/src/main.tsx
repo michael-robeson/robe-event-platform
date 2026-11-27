@@ -24,6 +24,9 @@ type PubSubInventory = { topics: ResourceGroup; subscriptions: ResourceGroup };
 type Observation = { consumer: string; event_id: string; event_type: string; contract_version: string; source: string; occurred_at: string; recorded_at: string };
 type Page = { observations: Observation[]; sources: Record<string, string>; next_cursor: string | null };
 type EventDetail = { event_id: string; sources: Record<string, { status: string; record: Record<string, unknown> | null }> };
+type SyntheticTemplate = { id: string; name: string; origin: string; service: string };
+type SyntheticTemplates = { templates: SyntheticTemplate[]; errors: string[] };
+type Publication = { status: string; topic: string; message_id: string; event_id: string | null; correlation_id: string | null; causation_id: string | null };
 type FlowNode = Node<{ label: React.ReactNode }>;
 type FlowEdge = Edge<{
   label: string;
@@ -153,7 +156,118 @@ function TopologyView({ topology, onRefresh }: { topology: Topology | null; onRe
         </> : <p>Select a node to inspect its identity, health, discovery evidence, or configuration.</p>}
       </aside>
     </div>}
+    {selectedNode?.kind === "topic" && selectedNode.observed &&
+      <SyntheticPublisher key={selectedNode.id} topic={selectedNode.id.slice("topic:".length)} />}
   </section>;
+}
+
+class SyntheticRequestError extends Error {
+  constructor(message: string, readonly status: number) { super(message); }
+}
+
+async function syntheticRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(path, { cache: "no-store", ...init });
+  const body: unknown = await response.json();
+  if (!response.ok) {
+    const detail = typeof body === "object" && body !== null && "detail" in body ? String(body.detail) : `Request failed (${response.status})`;
+    throw new SyntheticRequestError(detail, response.status);
+  }
+  return body as T;
+}
+
+function SyntheticPublisher({ topic }: { topic: string }) {
+  const [available, setAvailable] = useState<SyntheticTemplates | null>(null);
+  const [choice, setChoice] = useState("");
+  const [template, setTemplate] = useState<Record<string, unknown> | null>(null);
+  const [payload, setPayload] = useState("");
+  const [error, setError] = useState("");
+  const [publication, setPublication] = useState<Publication | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [generation, setGeneration] = useState(0);
+  const selected = choice === "" ? undefined : available?.templates[Number(choice)];
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const params = new URLSearchParams({ topic });
+    syntheticRequest<SyntheticTemplates>(`/api/v1/synthetic/templates?${params}`, { signal: controller.signal })
+      .then(setAvailable).catch((failure: unknown) => { if (!controller.signal.aborted) setError(String(failure)); });
+    return () => controller.abort();
+  }, [topic]);
+
+  useEffect(() => {
+    setTemplate(null);
+    setPayload("");
+    setPublication(null);
+    setSubmitted(false);
+    setError("");
+    if (!selected) return;
+    const controller = new AbortController();
+    const params = new URLSearchParams({ topic, origin: selected.origin, template_id: selected.id });
+    syntheticRequest<Record<string, unknown>>(`/api/v1/synthetic/template?${params}`, { signal: controller.signal })
+      .then((message) => { setTemplate(message); setPayload(JSON.stringify(message.payload, null, 2)); })
+      .catch((failure: unknown) => { if (!controller.signal.aborted) setError(String(failure)); });
+    return () => controller.abort();
+  }, [topic, selected, generation]);
+
+  async function publish(event: React.FormEvent) {
+    event.preventDefault();
+    if (!selected || !template) return;
+    let edited: unknown;
+    try { edited = JSON.parse(payload) as unknown; }
+    catch { setError("Payload must be valid JSON."); return; }
+    setLoading(true);
+    setSubmitted(true);
+    setError("");
+    try {
+      const result = await syntheticRequest<Publication>("/api/v1/synthetic/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Workbench-Intent": "synthetic-publication" },
+        body: JSON.stringify({ topic, origin: selected.origin, template_id: selected.id, message: { ...template, payload: edited } }),
+      });
+      setPublication(result);
+    } catch (failure) {
+      if (failure instanceof SyntheticRequestError && failure.status === 422) {
+        setSubmitted(false);
+        setError(String(failure));
+      } else {
+        setError(`${String(failure)}. If broker acceptance is unknown, do not retry blindly.`);
+      }
+    } finally { setLoading(false); }
+  }
+
+  const envelope = template ? Object.fromEntries(Object.entries(template).filter(([key]) => key !== "payload")) : null;
+  return <div className="synthetic-panel" aria-labelledby="synthetic-heading">
+    <h3 id="synthetic-heading">Publish a synthetic message</h3>
+    <p className="note">Local emulator only. Select a service-owned template, inspect or edit its payload, then explicitly publish once. Broker acceptance does not establish delivery or processing.</p>
+    <p>Topic: <code>{topic}</code></p>
+    {available?.errors.map((message) => <p role="status" key={message}>{message}</p>)}
+    {available && available.templates.length === 0 && <p>No synthetic templates are available for this topic.</p>}
+    {available && available.templates.length > 0 && <form onSubmit={(event) => void publish(event)}>
+      <label htmlFor="synthetic-template">Service template</label>
+      <select id="synthetic-template" value={choice} disabled={loading} onChange={(event) => setChoice(event.target.value)}>
+        <option value="">Select a template</option>
+        {available.templates.map((item, index) => <option value={index} key={`${item.origin}:${item.id}`}>{item.name} — {item.service}</option>)}
+      </select>
+      {template && <>
+        <h4>Message envelope</h4>
+        <pre>{JSON.stringify(envelope, null, 2)}</pre>
+        <label htmlFor="synthetic-payload">Payload JSON</label>
+        <textarea id="synthetic-payload" rows={10} value={payload} disabled={loading || submitted}
+          onChange={(event) => setPayload(event.target.value)} spellCheck={false} />
+        <div className="synthetic-actions">
+          <button type="submit" disabled={loading || submitted}>Publish to local emulator</button>
+          <button type="button" disabled={loading} onClick={() => setGeneration((value) => value + 1)}>Prepare new message</button>
+        </div>
+      </>}
+    </form>}
+    {error && <p role="alert">{error}</p>}
+    {publication && <div role="status">
+      <strong>Broker accepted the message.</strong>
+      <p>Downstream delivery and processing have not been verified.</p>
+      <pre>{JSON.stringify(publication, null, 2)}</pre>
+    </div>}
+  </div>;
 }
 
 function DiagnosticsView({
@@ -326,7 +440,7 @@ function App() {
   return <main>
     <header>
       <div>
-        <p className="eyebrow">LOCAL DEVELOPMENT / READ ONLY</p>
+        <p className="eyebrow">LOCAL DEVELOPMENT</p>
         <h1>Event Platform Workbench</h1>
         <p>Explore service declarations, observed health, and live messaging topology.</p>
       </div>

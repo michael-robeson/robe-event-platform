@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 from http.client import HTTPConnection, HTTPException as HTTPClientError
 from datetime import datetime, timezone
@@ -8,9 +9,10 @@ from urllib.parse import urlsplit, urlunsplit
 from uuid import UUID
 
 import psycopg
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from google.api_core.exceptions import GoogleAPICallError, NotFound
 from google.cloud import pubsub_v1
+from starlette.concurrency import run_in_threadpool
 
 from robe_event_platform.database import DatabaseSettings
 from robe_event_platform.local_config import (
@@ -21,6 +23,7 @@ from robe_event_platform.workbench.observations import (
     connect, decode_cursor, event_detail, observations,
 )
 from robe_event_platform.workbench.topology import build_topology
+from robe_event_platform.workbench import synthetic
 
 logger = logging.getLogger(__name__)
 app = FastAPI(title="Local Event Platform Workbench", docs_url=None, redoc_url=None)
@@ -197,6 +200,61 @@ def pubsub_resources() -> dict:
 @app.get("/api/v1/topology")
 def topology() -> dict:
     return build_topology(pubsub_resources())
+
+
+@app.get("/api/v1/synthetic/templates")
+def synthetic_templates(topic: str = Query(max_length=1024)) -> dict:
+    synthetic.require_enabled()
+    return synthetic.list_templates(topic, _discover_topics(f"projects/{LOCAL_PROJECT_ID}"))
+
+
+@app.get("/api/v1/synthetic/template")
+def synthetic_template(
+    topic: str = Query(max_length=1024),
+    origin: str = Query(max_length=1024),
+    template_id: str = Query(max_length=256),
+) -> dict:
+    synthetic.require_enabled()
+    return synthetic.get_template(
+        origin, template_id, topic, _discover_topics(f"projects/{LOCAL_PROJECT_ID}"),
+    )
+
+
+def _reject_json_constant(value: str) -> None:
+    raise ValueError(f"Invalid JSON constant: {value}")
+
+
+def _publish_synthetic(value: dict) -> dict:
+    return synthetic.publish(
+        value["origin"], value["template_id"], value["topic"], value["message"],
+        _discover_topics(f"projects/{LOCAL_PROJECT_ID}"),
+    )
+
+
+@app.post("/api/v1/synthetic/publish")
+async def publish_synthetic(request: Request) -> dict:
+    synthetic.require_enabled()
+    synthetic.require_browser_intent(request)
+    if request.headers.get("content-type", "").split(";", 1)[0].strip().lower() != "application/json":
+        raise HTTPException(status_code=415, detail="JSON content type required")
+    data = bytearray()
+    async for chunk in request.stream():
+        data.extend(chunk)
+        if len(data) > synthetic.MESSAGE_LIMIT:
+            raise HTTPException(status_code=413, detail="Request exceeds the size limit")
+    try:
+        value = json.loads(data, parse_constant=_reject_json_constant)
+    except (ValueError, UnicodeError, RecursionError) as error:
+        raise HTTPException(status_code=400, detail="Invalid JSON request") from error
+    if (
+        not isinstance(value, dict)
+        or set(value) != {"origin", "template_id", "topic", "message"}
+        or not all(isinstance(value[key], str) and 0 < len(value[key]) <= 1024
+                   for key in ("origin", "template_id", "topic"))
+        or not isinstance(value["message"], dict)
+    ):
+        raise HTTPException(status_code=400, detail="Invalid publication request")
+    return await run_in_threadpool(_publish_synthetic, value)
 
 
 @app.get("/api/v1/status")

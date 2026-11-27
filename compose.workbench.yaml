@@ -12,6 +12,7 @@ services:
       PUBSUB_EMULATOR_HOST: pubsub:8085
       PUBSUB_PROJECT_ID: robe-local
       WORKBENCH_SERVICE_URLS: '${WORKBENCH_SERVICE_URLS:-["http://email-gmail:8000"]}'
+      WORKBENCH_SYNTHETIC_PUBLISH_ENABLED: "${WORKBENCH_SYNTHETIC_PUBLISH_ENABLED:-false}"
     networks:
       - default
       - event-platform-dev

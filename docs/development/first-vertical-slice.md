@@ -131,8 +131,8 @@ administrator password. Run it only against an authorized local test database.
 ## Service developer workbench
 
 The Workbench's primary view is an interactive service topology. It reads
-service descriptors and Pub/Sub emulator configuration without publishing or
-consuming messages. Start the Platform emulator and independently maintained
+service descriptors and Pub/Sub emulator configuration without consuming
+messages. Start the Platform emulator and independently maintained
 services first; for the Gmail example, follow the service repository's local
 synthetic round-trip setup and leave its Compose project running.
 
@@ -163,6 +163,19 @@ subscription dead-letter policy is displayed as a configuration relationship
 to its target topic, not proof that forwarding occurred.
 The graph uses Dagre's directed layout and recalculates on refresh; feedback
 cycles may require edges to travel against the primary direction.
+
+Synthetic publication is disabled by default. To enable it in the local
+Workbench composition, set `WORKBENCH_SYNTHETIC_PUBLISH_ENABLED=true` when
+starting the Workbench. Select an observed topic, choose a service-owned
+template, inspect its generated envelope and edit its JSON payload, then
+explicitly publish. The service must advertise the template and its
+same-origin Draft 2020-12 JSON Schema in its descriptor. Schemas may use local
+references but must not require remote retrieval. Each new message gets a
+fresh service-generated identity. Broker acceptance is not proof of delivery
+or processing; a timeout leaves acceptance unknown. Do not retry blindly.
+Only synthetic, non-sensitive data belongs in these templates. Keep the
+Workbench bound to loopback and use this development network only with
+trusted local clients; it is not an authenticated production API.
 
 The **Demonstration diagnostics** view retains the reference publisher,
 Item/Audit consumer observations, and diagnostics described below. It is
@@ -256,7 +269,7 @@ PY
 
 If these example IDs already exist, substitute a unique suffix in both
 commands. The emulator's topic and subscription inventory is independent of
-the Workbench's read-only API.
+the Workbench's read-only discovery API.
 
 The Pub/Sub emulator supports local HTTP push but does not validate
 production HTTPS push authentication or IAM. Its message retention is not

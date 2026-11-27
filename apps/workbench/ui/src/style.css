@@ -57,7 +57,7 @@ h2 { font-size: 1.15rem; }
 p { line-height: 1.5; }
 .eyebrow { color: var(--accent); font-size: .75rem; font-weight: 700; letter-spacing: .12em; }
 section { background: var(--surface); border: 1px solid var(--border); border-radius: .75rem; padding: 1.25rem; margin-bottom: 1rem; min-width: 0; }
-button, select, input { font: inherit; color: var(--text); border: 1px solid var(--border); border-radius: .4rem; padding: .55rem .7rem; }
+button, select, input, textarea { font: inherit; color: var(--text); border: 1px solid var(--border); border-radius: .4rem; padding: .55rem .7rem; }
 button { cursor: pointer; color: var(--accent); background: var(--button); }
 button:hover, button[aria-pressed="true"] { background: var(--button-active); }
 button:disabled { opacity: .5; cursor: default; }
@@ -72,6 +72,11 @@ button:disabled { opacity: .5; cursor: default; }
 .topology-details h3 { margin-top: .35rem; }
 .topology-details:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
 .topology-details pre { font-size: .78rem; }
+.synthetic-panel { margin-top: 1rem; padding: 1rem; border: 1px solid var(--border); border-radius: .55rem; background: var(--surface-subtle); }
+.synthetic-panel form { display: grid; gap: .5rem; }
+.synthetic-panel pre { margin: .25rem 0; }
+.synthetic-panel textarea { width: 100%; min-width: 0; resize: vertical; font-family: monospace; background: var(--surface); }
+.synthetic-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
 .react-flow__node.topology-node { width: 180px; height: 88px; display: flex; align-items: center; justify-content: center; padding: .5rem; color: var(--text); background: var(--surface); border-width: 2px; border-radius: .6rem; box-shadow: 0 2px 6px #0002; }
 .topology-node--service { border-color: var(--service) !important; }
 .topology-node--topic { border-color: var(--topic) !important; }

@@ -42,6 +42,20 @@
             }
           }
         },
+        "synthetic_templates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "name", "topic_id", "template_path", "contract_path"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1, "pattern": "^[^/]+$" },
+              "name": { "type": "string", "minLength": 1 },
+              "topic_id": { "type": "string", "minLength": 1, "pattern": "^[^/]+$" },
+              "template_path": { "type": "string", "pattern": "^/(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^?#]*$" },
+              "contract_path": { "type": "string", "pattern": "^/(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^?#]*$" }
+            }
+          }
+        },
         "subscriptions": {
           "type": "array",
           "items": {
