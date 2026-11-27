@@ -4,6 +4,7 @@ import logging
 from http.client import HTTPConnection, HTTPException as HTTPClientError
 from datetime import datetime, timezone
 from typing import Literal
+from urllib.parse import urlsplit, urlunsplit
 from uuid import UUID
 
 import psycopg
@@ -19,9 +20,25 @@ from robe_event_platform.local_config import (
 from robe_event_platform.workbench.observations import (
     connect, decode_cursor, event_detail, observations,
 )
+from robe_event_platform.workbench.topology import build_topology
 
 logger = logging.getLogger(__name__)
 app = FastAPI(title="Local Event Platform Workbench", docs_url=None, redoc_url=None)
+
+
+def _safe_push_endpoint(value: str) -> str:
+    try:
+        parsed = urlsplit(value)
+        if not parsed.scheme or not parsed.hostname:
+            return "configured"
+        host = parsed.hostname
+        if ":" in host:
+            host = f"[{host}]"
+        if parsed.port is not None:
+            host = f"{host}:{parsed.port}"
+        return urlunsplit((parsed.scheme, host, parsed.path, "", ""))
+    except ValueError:
+        return "configured"
 
 
 def settings() -> DatabaseSettings:
@@ -118,10 +135,36 @@ def _discover_subscriptions(project_path: str) -> dict:
         for subscription in subscriber.list_subscriptions(
             request={"project": project_path}, retry=None, timeout=2,
         ):
-            resources.append({
+            resource = {
                 "name": subscription.name,
                 "topic": subscription.topic,
-            })
+            }
+            if getattr(subscription, "ack_deadline_seconds", None) is not None:
+                resource["ack_deadline_seconds"] = subscription.ack_deadline_seconds
+            push_endpoint = getattr(
+                getattr(subscription, "push_config", None), "push_endpoint", ""
+            )
+            if push_endpoint:
+                resource["push_endpoint"] = _safe_push_endpoint(push_endpoint)
+            retry_policy = getattr(subscription, "retry_policy", None)
+            if retry_policy:
+                resource["retry_policy"] = {
+                    key: value
+                    for key, duration in (
+                        ("minimum_backoff_seconds", getattr(retry_policy, "minimum_backoff", None)),
+                        ("maximum_backoff_seconds", getattr(retry_policy, "maximum_backoff", None)),
+                    )
+                    if duration is not None
+                    for value in (getattr(duration, "seconds", None),)
+                    if value is not None
+                }
+            dead_letter_policy = getattr(subscription, "dead_letter_policy", None)
+            if dead_letter_policy and getattr(dead_letter_policy, "dead_letter_topic", ""):
+                resource["dead_letter_policy"] = {
+                    "topic": dead_letter_policy.dead_letter_topic,
+                    "max_delivery_attempts": dead_letter_policy.max_delivery_attempts,
+                }
+            resources.append(resource)
     except GoogleAPICallError:
         logger.exception("Could not discover local Pub/Sub subscriptions")
         return _unknown_inventory("Subscription", resources)
@@ -149,6 +192,11 @@ def pubsub_resources() -> dict:
         "topics": _discover_topics(project_path),
         "subscriptions": _discover_subscriptions(project_path),
     }
+
+
+@app.get("/api/v1/topology")
+def topology() -> dict:
+    return build_topology(pubsub_resources())
 
 
 @app.get("/api/v1/status")

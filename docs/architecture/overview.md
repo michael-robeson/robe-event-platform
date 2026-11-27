@@ -21,7 +21,9 @@ details for ownership boundaries and recovery remain open. The first
 executable implementation is a local demonstration; see the [vertical-slice
 guide](../development/first-vertical-slice.md).
 The local read-only workbench and its observation limits are accepted in
-[ADR-0004](../decisions/0004-local-event-platform-workbench.md).
+[ADR-0004](../decisions/0004-local-event-platform-workbench.md), with the
+service-oriented topology and descriptor contract established by
+[ADR-0006](../decisions/0006-service-oriented-workbench.md).
 
 ## Architectural guidance
 

@@ -1,0 +1,25 @@
+services:
+  workbench-provision:
+    profiles: [demo]
+    build:
+      context: .
+      dockerfile: apps/workbench/Dockerfile
+    command: ["python", "-m", "robe_event_platform.workbench.provision"]
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: robe_events
+      DATABASE_USER: robe_admin
+      DATABASE_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:?Set POSTGRES_ADMIN_PASSWORD in .env}
+      WORKBENCH_DB_PASSWORD: ${WORKBENCH_DB_PASSWORD:?Set WORKBENCH_DB_PASSWORD in .env}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      audit-migrate:
+        condition: service_completed_successfully
+    restart: "no"
+
+  workbench:
+    depends_on:
+      workbench-provision:
+        condition: service_completed_successfully

@@ -14,6 +14,12 @@ from robe_event_platform.database import DatabaseSettings
 from robe_event_platform.workbench import api, observations
 
 
+def test_push_endpoint_details_omit_userinfo_and_query_parameters() -> None:
+    assert api._safe_push_endpoint(
+        "https://user:secret@example.test/push?token=private"
+    ) == "https://example.test/push"
+
+
 def test_invalid_cursor_is_rejected() -> None:
     client = TestClient(api.app)
     malformed = base64.urlsafe_b64encode(
