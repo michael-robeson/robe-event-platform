@@ -4,9 +4,12 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "build": "tsc --noEmit && vite build"
+    "build": "tsc --noEmit && vite build",
+    "test": "node --experimental-strip-types --test tests/*.test.mjs"
   },
   "dependencies": {
+    "@dagrejs/dagre": "3.1.4",
+    "@xyflow/react": "13.0.3",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },

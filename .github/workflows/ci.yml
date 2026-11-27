@@ -22,6 +22,12 @@ jobs:
       - run: python -m pip install -r .github/requirements-metadata.txt
       - run: python -m eng_lifecycle.metadata check --repo .
       - run: python -m pytest tests/unit -q
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm --prefix apps/workbench/ui ci --no-audit --no-fund
+      - run: npm --prefix apps/workbench/ui test
+      - run: npm --prefix apps/workbench/ui run build
 
   integration:
     name: Pub/Sub and PostgreSQL integration
@@ -61,9 +67,9 @@ jobs:
       - name: Provision emulator topic and subscription
         run: docker compose --profile demo -f compose.yaml -f compose.demo.yaml run --rm pubsub-bootstrap
       - name: Start the workbench
-        run: docker compose --profile demo -f compose.yaml -f compose.demo.yaml -f compose.workbench.yaml up --build --wait --wait-timeout 120 workbench
+        run: docker compose --profile demo -f compose.yaml -f compose.demo.yaml -f compose.workbench.yaml -f compose.workbench.demo.yaml up --build --wait --wait-timeout 120 workbench
       - name: Run end-to-end tests
         run: python -m pytest tests/e2e tests/workbench -q
       - name: Show service logs on failure
         if: failure()
-        run: docker compose --profile demo -f compose.yaml -f compose.demo.yaml -f compose.workbench.yaml logs --no-color
+        run: docker compose --profile demo -f compose.yaml -f compose.demo.yaml -f compose.workbench.yaml -f compose.workbench.demo.yaml logs --no-color

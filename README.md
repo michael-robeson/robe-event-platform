@@ -59,7 +59,7 @@ They will be added when needed rather than created as empty directories.
 ## Local development
 
 See [the first vertical-slice guide](docs/development/first-vertical-slice.md)
-for local setup, end-to-end verification, and the optional read-only workbench.
+for local setup, end-to-end verification, and the service developer workbench.
 
 The Python badge reports the declared requirement, not tested versions. The
 PR CI badge reports a pull-request run, not necessarily the current

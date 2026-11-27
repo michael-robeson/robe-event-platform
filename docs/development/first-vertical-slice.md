@@ -128,17 +128,57 @@ the database. With PostgreSQL running and the environment exported as above,
 records and can be repeated. It starts a migration container and requires the
 administrator password. Run it only against an authorized local test database.
 
-## Optional read-only workbench
+## Service developer workbench
 
-Set `WORKBENCH_DB_PASSWORD` in `.env` to a separate local-only password.
-With the services and subscriptions started above, run:
+The Workbench's primary view is an interactive service topology. It reads
+service descriptors and Pub/Sub emulator configuration without publishing or
+consuming messages. Start the Platform emulator and independently maintained
+services first; for the Gmail example, follow the service repository's local
+synthetic round-trip setup and leave its Compose project running.
+
+From the Platform repository root, start the Workbench:
 
 ```sh
-docker compose --profile demo -f compose.yaml -f compose.demo.yaml -f compose.workbench.yaml up --build -d workbench
+docker compose -f compose.yaml -f compose.workbench.yaml up --build -d workbench
 ```
 
-Open `http://127.0.0.1:8083`. The optional overlay provisions a dedicated
-reader role on an existing volume, without changing consumer data. The
+Open `http://127.0.0.1:8083`. The Workbench joins the shared
+`robe-event-platform-dev` network and reads the Gmail service at
+`http://email-gmail:8000`, configured in `compose.workbench.yaml`. To add a
+service, configure its HTTP origin in `WORKBENCH_SERVICE_URLS`; it must expose
+the platform-owned descriptor contract at
+`/.well-known/robe-service.json`. The Workbench does not scan the network or
+require service-specific adapter code. Health, declared messaging, and
+runtime-discovered resources are displayed as separate evidence.
+The graph follows message flow from left to right, including fan-out and
+dead-letter branches; infrastructure status is shown separately. Select a
+node or infrastructure status to inspect its evidence and configuration.
+Edge labels use `D` for declared and `O` for observed evidence.
+On narrow screens, use the graph controls to zoom and pan for detail.
+Where a declared consumption is already represented by a declared
+topic-to-subscription-to-service path, its direct shortcut is omitted; select
+the service or topic to inspect the declaration. Dead-letter declarations
+are also shown in details rather than as service publications. An observed
+subscription dead-letter policy is displayed as a configuration relationship
+to its target topic, not proof that forwarding occurred.
+The graph uses Dagre's directed layout and recalculates on refresh; feedback
+cycles may require edges to travel against the primary direction.
+
+The **Demonstration diagnostics** view retains the reference publisher,
+Item/Audit consumer observations, and diagnostics described below. It is
+separate from the normal topology view and loads only when selected.
+
+## Optional demonstration diagnostics
+
+Set `WORKBENCH_DB_PASSWORD` in `.env` to a separate local-only password.
+With the demo PostgreSQL and consumers started as described above, run:
+
+```sh
+docker compose --profile demo -f compose.yaml -f compose.demo.yaml -f compose.workbench.yaml -f compose.workbench.demo.yaml up --build -d workbench-provision workbench
+```
+
+The `compose.workbench.demo.yaml` overlay provisions a dedicated reader role
+on the existing database volume without changing consumer data. The
 provisioning container needs the local administrator password; the API
 receives only its reader password. The role has read grants on the two
 consumer schemas, not write grants. As with other existing roles, changing
@@ -146,10 +186,9 @@ the environment password does not rotate the stored password; restore the
 original or explicitly administer rotation. Existing unexpected or
 privileged workbench roles cause provisioning to fail.
 
-The UI shows HTTP liveness, a database connection check, known-resource
-diagnostics, a dynamically refreshed inventory of emulator topics and
-subscriptions with their reported topic relationships, and independently
-observed database records. A missing row does not establish failure, and an
+The reference diagnostics include HTTP liveness, a database connection check,
+known-resource checks, emulator inventory, and independently observed
+database records. A missing row does not establish failure, and an
 unavailable source is unknown. A stored row does not prove publication,
 delivery, or acknowledgment. Timestamps are database transaction-time values,
 not commit timestamps; sorting and pagination are best effort and do not
