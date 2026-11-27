@@ -9,7 +9,8 @@
   "readiness_gate": {
     "commands": [
       [".venv/bin/python", "-m", "compileall", "-q", "src", "tests"],
-      [".venv/bin/python", "-m", "pytest", "tests/unit", "-q"]
+      [".venv/bin/python", "-m", "pytest", "tests/unit", "-q"],
+      [".venv/bin/python", "-m", "eng_lifecycle.metadata", "check", "--repo", "."]
     ]
   },
   "integration_gate": {

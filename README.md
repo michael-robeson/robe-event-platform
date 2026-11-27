@@ -1,5 +1,12 @@
 # Robe Event Platform
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![PR CI](https://github.com/robe-land/robe-platform-event/actions/workflows/ci.yml/badge.svg?event=pull_request)](https://github.com/robe-land/robe-platform-event/actions/workflows/ci.yml)
+[![Declared Python requirement](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Frobe-land%2Frobe-platform-event%2Fdevelop%2F.github%2Fbadges%2Fpython.json)](pyproject.toml)
+[![Top language](https://img.shields.io/github/languages/top/robe-land/robe-platform-event)](https://github.com/robe-land/robe-platform-event)
+[![Language count](https://img.shields.io/github/languages/count/robe-land/robe-platform-event)](https://github.com/robe-land/robe-platform-event)
+[![Last commit](https://img.shields.io/github/last-commit/robe-land/robe-platform-event/develop)](https://github.com/robe-land/robe-platform-event/commits/develop)
+
 Robe Event Platform is evolving toward a composable, event-capable application
 platform. Its current implementation is a local, GCP-targeted reference slice
 for event-driven services. It is an independent platform repository, not an
@@ -53,3 +60,7 @@ They will be added when needed rather than created as empty directories.
 
 See [the first vertical-slice guide](docs/development/first-vertical-slice.md)
 for local setup, end-to-end verification, and the optional read-only workbench.
+
+The Python badge reports the declared requirement, not tested versions. The
+PR CI badge reports a pull-request run, not necessarily the current
+`develop` commit. Badge displays may be cached.
