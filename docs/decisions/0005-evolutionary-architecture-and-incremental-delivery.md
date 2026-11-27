@@ -14,7 +14,7 @@ requirement.
 
 ADR-0001 establishes the initial technology direction; ADR-0002 establishes
 messaging and reliability principles; ADR-0003 establishes persistence
-ownership; and ADR-0004 establishes the local read-only workbench boundary.
+ownership; and ADR-0004 establishes the local workbench boundary.
 This decision defines an incremental planning approach. It does not amend
 those decisions or establish a capability roadmap.
 

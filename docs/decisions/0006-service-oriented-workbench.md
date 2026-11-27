@@ -2,6 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-11-26
+- **Revised:** 2026-11-27 — permits optional service-owned synthetic templates.
 
 ## Context
 
@@ -14,8 +15,8 @@ and ownership.
 
 The Workbench must keep three kinds of evidence distinct: a service-declared
 relationship, a Pub/Sub resource or relationship discovered at runtime, and
-an independently observed liveness result. It remains local-only, read-only,
-and outside the event-processing path under
+an independently observed liveness result. Discovery remains local-only,
+read-only, and outside the event-processing path under
 [ADR-0004](0004-local-event-platform-workbench.md). The existing demonstration
 and its diagnostics remain useful for reference testing but should not be the
 normal service-development interface.
@@ -49,12 +50,18 @@ fits the React UI without introducing unneeded graph-analysis features. Keep
 the existing demonstration observations, event inspection, and diagnostics
 in a separate reference view.
 
+Services may optionally advertise synthetic templates for declared topics,
+with same-origin paths to a freshly generated message and its authoritative
+JSON Schema. The Workbench validates messages against that schema before an
+explicitly enabled local-emulator publication. Existing descriptors without
+templates continue to work; no service-specific Workbench adapter is needed.
+
 The Gmail retrieval service is the first descriptor provider. The local
 Workbench composition joins the existing `robe-event-platform-dev` network
 and uses its already-running service endpoint and Pub/Sub emulator; it does
 not own or modify Gmail resources or consumer data.
 
-Synthetic publication, message inspection, correlation tracking, failure
+Message capture, downstream tracing, bulk publication, failure
 diagnostics beyond current liveness/configuration observations, performance
 benchmarking, remote access, and authorization changes remain deferred.
 
@@ -62,8 +69,8 @@ benchmarking, remote access, and authorization changes remain deferred.
 
 New services can join the topology by implementing the shared descriptor
 contract and adding their origin to local Workbench configuration; no
-service-specific Workbench adapter is needed. The Workbench remains a
-read-only observer, and an unavailable descriptor does not prevent other
+service-specific Workbench adapter is needed. Discovery remains read-only,
+and an unavailable descriptor does not prevent other
 services or discovered Pub/Sub resources from appearing.
 
 The descriptor is a platform-owned integration contract consumed by
@@ -73,5 +80,5 @@ requires explicit contract and access-control review rather than silently
 extending version 1.
 
 This decision supersedes ADR-0004's demonstration-centric interface as the
-Workbench's primary experience. ADR-0004's local-only, read-only boundaries
+Workbench's primary experience. ADR-0004's local-only publication restrictions
 and observation limits continue to apply.
